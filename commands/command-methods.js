@@ -1,4 +1,5 @@
 var methods = require("../lib/methods");
+var metrics = require("../lib/metrics");
 
 module.exports = function methodsRulesCommand(program) {
   program
@@ -15,38 +16,45 @@ module.exports = function methodsRulesCommand(program) {
 
       switch (command) {
           case "create":
-            program.require(options.metric,"Metric ID required");
             program.require(options.method,"Method name required");
+            //Find id of metrics hits
+            metrics.getHitsMetric(options.service)
+            .then(function(hit_metric){
+              methods.createMethod(options.service, hit_metric.id, options.method, options.unit).then(function(result){
+                var msg = "Method with name "+options.method.inverse+" on service "+options.service.inverse+" created under "+"Hits".inverse+" metric."
+                program.print({message:msg, type:"success"});
+              });
+            })
 
-            methods.createMethod(options.service, options.metric, options.method, options.unit).then(function(result){
-              var msg = "Method with name "+options.method.inverse+" on service "+options.service.inverse+" created under "+options.metric.inverse+" metric."
-              program.print({message:msg, type:"success"});
-            });
             break;
           case "list":
-            program.require(options.metric,"Metric ID required");
-
-            methods.listMethods(options.service, options.metric).then(function(result){
-              var msg = "There are "+result.length+" methods for this service.\n"
-              program.print({message:msg, type:"success", table: result, key:"method"});
-            });
+          metrics.getHitsMetric(options.service)
+          .then(function(hit_metric){
+              methods.listMethods(options.service, hit_metric.id).then(function(result){
+                var msg = "There are "+result.length+" methods for this service.\n"
+                program.print({message:msg, type:"success", table: result, key:"method"});
+              });
+            })
             break;
           case "show":
-            program.require(options.metric,"Metric ID required");
             program.require(options.methodID,"Method ID required");
-            methods.getMethodById(options.service,options.metric,options.methodID).then(function(result){
-              var msg = "Details about method.\n"
-              program.print({message:msg, type:"success", table: result});
-            });
+            metrics.getHitsMetric(options.service)
+              .then(function(hit_metric){
+              methods.getMethodById(options.service,hit_metric.id,options.methodID).then(function(result){
+                var msg = "Details about method.\n"
+                program.print({message:msg, type:"success", table: result});
+              });
+            })
             break;
           case "update":
-            program.require(options.metric,"Metric ID required");
             program.require(options.methodID,"Method ID required");
-
-            methods.updateMethod(options.service,options.metric,options.methodID,options.method,options.unit).then(function(result){
-                var msg = "Method with id "+options.methodID.inverse+" updated.\n"
-                program.print({message:msg, type:"success", table: result});
-            });
+            metrics.getHitsMetric(options.service)
+              .then(function(hit_metric){
+                methods.updateMethod(options.service,options.metric,options.methodID,options.method,options.unit).then(function(result){
+                    var msg = "Method with id "+options.methodID.inverse+" updated.\n"
+                    program.print({message:msg, type:"success", table: result});
+                });
+              })
             break;
           case "delete":
             program.require(options.metric,"Metric ID required");
